@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Schedule State Display</title>
+<title>Arrosage</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   #output { font-size: 1.2em; }
 </style>
 </head>
 <body>
-<h2>Current State from Daily Schedule</h2>
+<h2>Arrosage</h2>
 <div id="output">Loading...</div>
 
 <script>
@@ -45,7 +45,7 @@ function timeToMinutes(t) {
   return h * 60 + m;
 }
 
-// Gets the current day name string (e.g. "Monday")
+// Gets current day name string (e.g. "Monday")
 function getCurrentDayName() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long' });
 }
@@ -63,17 +63,24 @@ function formatMinutes(m) {
   return `${hh}:${mm}`;
 }
 
-// Main logic to check current state and generate message
-function getCurrentState(schedule) {
-  const day = getCurrentDayName();
-  const intervals = schedule[day] || [];
+// Helper to get day name by index offset
+const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+function getDayNameByOffset(offset) {
+  const todayIndex = daysOfWeek.indexOf(getCurrentDayName());
+  return daysOfWeek[(todayIndex + offset + 7) % 7];
+}
+
+// Main logic to check current state and generate message with day info
+function getCurrentState(schedule) {
+  const today = getCurrentDayName();
+  const intervalsToday = schedule[today] || [];
   const now = getMinutesNow();
   let isOn = false;
   let currentOnInterval = null;
 
   // Check if current time falls in any on interval
-  for (const interval of intervals) {
+  for (const interval of intervalsToday) {
     const onMin = timeToMinutes(interval.on);
     const offMin = timeToMinutes(interval.off);
     if (now >= onMin && now < offMin) {
@@ -83,101 +90,78 @@ function getCurrentState(schedule) {
     }
   }
 
-  // Find previous and next intervals for context when off
-  function findPreviousOn() {
-    let prev = null;
-    for (const dayKey of getDaysLoop(day, schedule)) {
-      const dayIntervals = schedule[dayKey] || [];
+  // Helper to find last on interval (and day)
+  function findLastOn() {
+    let lastInterval = null;
+    let lastDayOffset = 0; // 0 means today
+    for (let offset = 0; offset < 7; offset++) {
+      const dayName = getDayNameByOffset(-offset);
+      const dayIntervals = schedule[dayName] || [];
       for (const interval of dayIntervals) {
         const offMin = timeToMinutes(interval.off);
-        if (dayKey === day && offMin < now) {
-          if (!prev || (dayKey === day && offMin > timeToMinutes(prev.off))) {
-            prev = interval;
+        if (offset === 0) {
+          // Today
+          if (offMin <= now) {
+            return { interval, day: dayName };
           }
-        } else if (dayKey !== day) {
-          // For previous days, consider latest interval on that day
-          if (!prev || (dayKey < day)) prev = interval;
+        } else {
+          // Previous days, take latest interval
+          if (!lastInterval || offMin > timeToMinutes(lastInterval.off)) {
+            lastInterval = interval;
+            lastDayOffset = offset;
+          }
         }
       }
-      if (prev) break;
+      if (lastInterval) break;
     }
-    return prev;
+    if (lastInterval) {
+      const day = getDayNameByOffset(-lastDayOffset);
+      return { interval: lastInterval, day };
+    }
+    return null;
   }
 
+  // Helper to find next on interval (and day)
   function findNextOn() {
-    let next = null;
-    for (const dayKey of getDaysLoop(day, schedule)) {
-      const dayIntervals = schedule[dayKey] || [];
+    let nextInterval = null;
+    let nextDayOffset = 0; // 0 means today
+    for (let offset = 0; offset < 7; offset++) {
+      const dayName = getDayNameByOffset(offset);
+      const dayIntervals = schedule[dayName] || [];
       for (const interval of dayIntervals) {
         const onMin = timeToMinutes(interval.on);
-        if (dayKey === day && onMin > now) {
-          if (!next || (dayKey === day && onMin < timeToMinutes(next.on))) {
-            next = interval;
+        if (offset === 0) {
+          if (onMin > now) {
+            return { interval, day: dayName };
           }
-        } else if (dayKey !== day) {
-          // For next days, consider earliest interval on that day
-          if (!next || (dayKey > day)) next = interval;
+        } else {
+          if (!nextInterval || onMin < timeToMinutes(nextInterval.on)) {
+            nextInterval = interval;
+            nextDayOffset = offset;
+          }
         }
       }
-      if (next) break;
+      if (nextInterval) break;
     }
-    return next;
-  }
-
-  // Helper to loop days starting at current day in order
-  function getDaysLoop(startDay, schedule) {
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const startIndex = days.indexOf(startDay);
-    return [...days.slice(startIndex), ...days.slice(0, startIndex)];
+    if (nextInterval) {
+      const day = getDayNameByOffset(nextDayOffset);
+      return { interval: nextInterval, day };
+    }
+    return null;
   }
 
   if (isOn) {
     // Currently ON
-    return `The state is ON since ${currentOnInterval.on} and will go OFF at ${currentOnInterval.off}.`;
+    return `The state is ON since ${currentOnInterval.on} on ${today} and will go OFF at ${currentOnInterval.off}.`;
   } else {
     // Currently OFF
-    // Find last on interval (might be today or before)
-    let lastOn = null;
-    let nextOn = null;
+    const lastOn = findLastOn();
+    const nextOn = findNextOn();
 
-    const daysLoop = getDaysLoop(day, schedule);
+    const lastOnStr = lastOn ? `was last ON on ${lastOn.day} until ${lastOn.interval.off}` : "has not been ON yet";
+    const nextOnStr = nextOn ? `will be ON again on ${nextOn.day} at ${nextOn.interval.on}` : "will not be ON again soon";
 
-    // Find last ON (before now)
-    for (let i = 0; i < daysLoop.length; i++) {
-      const d = daysLoop[i];
-      const intervalsD = schedule[d] || [];
-      for (const interval of intervalsD) {
-        const offMin = timeToMinutes(interval.off);
-        if (d === day && offMin <= now) {
-          if (!lastOn || offMin > timeToMinutes(lastOn.off)) lastOn = interval;
-        } else if (daysLoop.indexOf(d) < daysLoop.indexOf(day)) {
-          // Previous days - consider last interval of that day
-          if (!lastOn) lastOn = interval;
-        }
-      }
-      if (lastOn) break;
-    }
-
-    // Find next ON (after now)
-    for (let i = 0; i < daysLoop.length; i++) {
-      const d = daysLoop[i];
-      const intervalsD = schedule[d] || [];
-      for (const interval of intervalsD) {
-        const onMin = timeToMinutes(interval.on);
-        if (d === day && onMin > now) {
-          if (!nextOn || onMin < timeToMinutes(nextOn.on)) nextOn = interval;
-        } else if (daysLoop.indexOf(d) > daysLoop.indexOf(day)) {
-          // Next days - earliest interval of that day
-          if (!nextOn) nextOn = interval;
-        }
-      }
-      if (nextOn) break;
-    }
-
-    const lastOnText = lastOn ? `was last ON until ${lastOn.off}` : "has not been ON yet";
-    const nextOnText = nextOn ? `will be ON again at ${nextOn.on}` : "will not be ON again";
-
-    return `The state is OFF, it ${lastOnText} and ${nextOnText}.`;
+    return `The state is OFF, it ${lastOnStr} and ${nextOnStr}.`;
   }
 }
 
@@ -187,17 +171,10 @@ function updateDisplay() {
   output.textContent = getCurrentState(schedule);
 }
 
-// Initial load and update every minute
+// Initial call and refresh every minute
 updateDisplay();
 setInterval(updateDisplay, 60000);
 
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
