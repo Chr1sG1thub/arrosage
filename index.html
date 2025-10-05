@@ -177,7 +177,7 @@ function getCurrentState(schedule) {
 // Display function
 function updateDisplay() {
   const output = document.getElementById("output");
-  output.textContent = getCurrentState(schedule);
+  output.innerHTML = getCurrentState(schedule);
 }
 
 // Initial call and refresh every minute
