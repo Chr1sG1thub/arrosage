@@ -1,0 +1,7 @@
+{
+  "name": "Arrosage",
+  "short_name": "Arrosage",
+  "icons": [
+    { "src": "water.png", "sizes": "192x192", "type": "image/png" },
+  ]
+}
