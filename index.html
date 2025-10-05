@@ -161,7 +161,7 @@ function getCurrentState(schedule) {
 
   if (isOn) {
     // Currently ON
-    return `The water is <span style="color: green;">ON</span> since ${currentOnInterval.on} on ${today} and will go OFF at ${currentOnInterval.off}.`;
+    return `<span style="color: green;">The water is ON since ${currentOnInterval.on} on ${today} and will go OFF at ${currentOnInterval.off}.</span>`;
   } else {
     // Currently OFF
     const lastOn = findLastOn();
@@ -170,7 +170,7 @@ function getCurrentState(schedule) {
     const lastOnStr = lastOn ? `was last ON on ${lastOn.day} until ${lastOn.interval.off}` : "has not been ON yet";
     const nextOnStr = nextOn ? `will be ON again on ${nextOn.day} at ${nextOn.interval.on}` : "will not be ON again soon";
 
-    return `The water is OFF, it ${lastOnStr} and ${nextOnStr}.`;
+    return `<span style="color: red;">The water is OFF, it ${lastOnStr} and ${nextOnStr}.</span>`;
   }
 }
 
