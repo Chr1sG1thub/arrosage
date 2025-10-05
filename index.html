@@ -1,0 +1,231 @@
+Home
+Finance
+Travel
+Academic
+Sports
+Library
+create the html and js for a webapp that will read a schedule of daily on and off times in a json an
+how to use padding in a span tag to put a gap round each character
+html textarea autoexpand
+on android can I install a web page as an app rather than a shortcut
+how do i reference js variables in html using $ operator
+i need some html and js to create a text box with lines of text that i can populate with html dynami
+where can i find a json file with all possible wordle words
+in html and css can i have a 5-letter word with each letter coloured differently
+is there a way in code to extract my wordle guesses for this day from a screenshot
+is there a way to extract the words from the wordle results page
+View All
+Home
+Discover
+Spaces
+Account
+
+Upgrade
+Install
+create the html and js for a webapp that will read a schedule of daily on and off times in a json and build text that says if the state is on or off, when it came on and will go off (if on now) or when it was last on and will be on again.
+
+create the html and js for a webapp that will read a schedule of daily on and off times in a json and build text that says if the state is on or off, when it came on and will go off (if on now) or when it was last on and will be on again.
+To create a simple web app that reads a JSON schedule of daily on/off times and displays the current state with associated timestamps, I'll provide an HTML and JavaScript example. The schedule will be a JSON object with on/off time intervals for each day (using 24-hour times), and the app will determine the current state (on or off) based on the current time.
+
+Here is an example implementation:
+
+xml
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Schedule State Display</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #output { font-size: 1.2em; }
+</style>
+</head>
+<body>
+<h2>Current State from Daily Schedule</h2>
+<div id="output">Loading...</div>
+
+<script>
+// Sample JSON schedule: daily array of on/off intervals (24h format "HH:mm")
+const schedule = {
+  "Monday": [
+    { "on": "08:00", "off": "12:00" },
+    { "on": "14:00", "off": "18:00" }
+  ],
+  "Tuesday": [
+    { "on": "09:00", "off": "17:00" }
+  ],
+  "Wednesday": [],
+  "Thursday": [
+    { "on": "08:30", "off": "12:30" },
+    { "on": "13:30", "off": "19:00" }
+  ],
+  "Friday": [
+    { "on": "07:00", "off": "15:00" }
+  ],
+  "Saturday": [],
+  "Sunday": []
+};
+
+// Utility to convert "HH:mm" string to minutes from midnight
+function timeToMinutes(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Gets the current day name string (e.g. "Monday")
+function getCurrentDayName() {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+// Returns the minutes from midnight now
+function getMinutesNow() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+// Format minutes from midnight as HH:mm string
+function formatMinutes(m) {
+  const hh = String(Math.floor(m / 60)).padStart(2, '0');
+  const mm = String(m % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+// Main logic to check current state and generate message
+function getCurrentState(schedule) {
+  const day = getCurrentDayName();
+  const intervals = schedule[day] || [];
+
+  const now = getMinutesNow();
+  let isOn = false;
+  let currentOnInterval = null;
+
+  // Check if current time falls in any on interval
+  for (const interval of intervals) {
+    const onMin = timeToMinutes(interval.on);
+    const offMin = timeToMinutes(interval.off);
+    if (now >= onMin && now < offMin) {
+      isOn = true;
+      currentOnInterval = interval;
+      break;
+    }
+  }
+
+  // Find previous and next intervals for context when off
+  function findPreviousOn() {
+    let prev = null;
+    for (const dayKey of getDaysLoop(day, schedule)) {
+      const dayIntervals = schedule[dayKey] || [];
+      for (const interval of dayIntervals) {
+        const offMin = timeToMinutes(interval.off);
+        if (dayKey === day && offMin < now) {
+          if (!prev || (dayKey === day && offMin > timeToMinutes(prev.off))) {
+            prev = interval;
+          }
+        } else if (dayKey !== day) {
+          // For previous days, consider latest interval on that day
+          if (!prev || (dayKey < day)) prev = interval;
+        }
+      }
+      if (prev) break;
+    }
+    return prev;
+  }
+
+  function findNextOn() {
+    let next = null;
+    for (const dayKey of getDaysLoop(day, schedule)) {
+      const dayIntervals = schedule[dayKey] || [];
+      for (const interval of dayIntervals) {
+        const onMin = timeToMinutes(interval.on);
+        if (dayKey === day && onMin > now) {
+          if (!next || (dayKey === day && onMin < timeToMinutes(next.on))) {
+            next = interval;
+          }
+        } else if (dayKey !== day) {
+          // For next days, consider earliest interval on that day
+          if (!next || (dayKey > day)) next = interval;
+        }
+      }
+      if (next) break;
+    }
+    return next;
+  }
+
+  // Helper to loop days starting at current day in order
+  function getDaysLoop(startDay, schedule) {
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const startIndex = days.indexOf(startDay);
+    return [...days.slice(startIndex), ...days.slice(0, startIndex)];
+  }
+
+  if (isOn) {
+    // Currently ON
+    return `The state is ON since ${currentOnInterval.on} and will go OFF at ${currentOnInterval.off}.`;
+  } else {
+    // Currently OFF
+    // Find last on interval (might be today or before)
+    let lastOn = null;
+    let nextOn = null;
+
+    const daysLoop = getDaysLoop(day, schedule);
+
+    // Find last ON (before now)
+    for (let i = 0; i < daysLoop.length; i++) {
+      const d = daysLoop[i];
+      const intervalsD = schedule[d] || [];
+      for (const interval of intervalsD) {
+        const offMin = timeToMinutes(interval.off);
+        if (d === day && offMin <= now) {
+          if (!lastOn || offMin > timeToMinutes(lastOn.off)) lastOn = interval;
+        } else if (daysLoop.indexOf(d) < daysLoop.indexOf(day)) {
+          // Previous days - consider last interval of that day
+          if (!lastOn) lastOn = interval;
+        }
+      }
+      if (lastOn) break;
+    }
+
+    // Find next ON (after now)
+    for (let i = 0; i < daysLoop.length; i++) {
+      const d = daysLoop[i];
+      const intervalsD = schedule[d] || [];
+      for (const interval of intervalsD) {
+        const onMin = timeToMinutes(interval.on);
+        if (d === day && onMin > now) {
+          if (!nextOn || onMin < timeToMinutes(nextOn.on)) nextOn = interval;
+        } else if (daysLoop.indexOf(d) > daysLoop.indexOf(day)) {
+          // Next days - earliest interval of that day
+          if (!nextOn) nextOn = interval;
+        }
+      }
+      if (nextOn) break;
+    }
+
+    const lastOnText = lastOn ? `was last ON until ${lastOn.off}` : "has not been ON yet";
+    const nextOnText = nextOn ? `will be ON again at ${nextOn.on}` : "will not be ON again";
+
+    return `The state is OFF, it ${lastOnText} and ${nextOnText}.`;
+  }
+}
+
+// Display function
+function updateDisplay() {
+  const output = document.getElementById("output");
+  output.textContent = getCurrentState(schedule);
+}
+
+// Initial load and update every minute
+updateDisplay();
+setInterval(updateDisplay, 60000);
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
