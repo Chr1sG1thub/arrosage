@@ -152,7 +152,7 @@ function getCurrentState(schedule) {
 
   if (isOn) {
     // Currently ON
-    return `The state is ON since ${currentOnInterval.on} on ${today} and will go OFF at ${currentOnInterval.off}.`;
+    return `The state is <span style="color: green;">ON</span> since ${currentOnInterval.on} on ${today} and will go <span style="color: red;">OFF</span> at ${currentOnInterval.off}.`;
   } else {
     // Currently OFF
     const lastOn = findLastOn();
