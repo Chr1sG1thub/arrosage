@@ -168,9 +168,9 @@ function getCurrentState(schedule) {
     const lastOn = findLastOn();
     const nextOn = findNextOn();
 
-    const lastOnStr = 'was last ON ' + (lastOn.day == today) ? 'today' : 'yesterday';
+    let lastOnStr = 'was last ON ' + (lastOn.day == today) ? 'today' : 'yesterday';
     lastOnStr = lastOnStr + ` until ${lastOn.interval.off}`;
-    const nextOnStr = 'will be ON again ' + (nextOn.day == today) ? 'today' : 'tomorrow';
+    let nextOnStr = 'will be ON again ' + (nextOn.day == today) ? 'today' : 'tomorrow';
     nextOnStr = nextOnStr + ` at ${nextOn.interval.on}`;
 
     return `<span style="color: red;">The water is OFF, it ${lastOnStr} and ${nextOnStr}.</span>`;
