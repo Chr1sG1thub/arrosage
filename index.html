@@ -14,7 +14,8 @@
 <div id="output">Loading...</div>
   <br/>
 <strong>Schedule</strong><br/>
-<i style="color : blue;">Mon: 2pm-5pm <br/>
+<i style="color : blue;">
+Mon: 2pm-5pm <br/>
 Tue: 8am-11am <br/>
 Wed: 2am-5am <br/>
 Thu: 8pm-11pm <br/>
@@ -167,8 +168,8 @@ function getCurrentState(schedule) {
     const lastOn = findLastOn();
     const nextOn = findNextOn();
 
-    const lastOnStr = lastOn ? `was last ON on ${lastOn.day} until ${lastOn.interval.off}` : "has not been ON yet";
-    const nextOnStr = nextOn ? `will be ON again on ${nextOn.day} at ${nextOn.interval.on}` : "will not be ON again soon";
+    const lastOnStr = `was last ON ` + (lastOn.day == today) ? `today` : `yesterday` + ` until ${lastOn.interval.off}`;
+    const nextOnStr = `will be ON again ` + (nextOn.day == today) ? `today` : `yesterday` + ` at ${nextOn.interval.on}`;
 
     return `<span style="color: red;">The water is OFF, it ${lastOnStr} and ${nextOnStr}.</span>`;
   }
