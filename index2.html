@@ -3,17 +3,27 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Schedule State with Overnight Support</title>
+<title>Arrosage Schedule</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; }
   #output { font-size: 1.2em; }
 </style>
 </head>
 <body>
-<h2>Current State from Daily Schedule (Supports Overnight)</h2>
+<h2>Arrosage Schedule</h2>
 <div id="output">Loading...</div>
 
-<script>
+<strong>Schedule</strong><br/>
+<i style="color : blue;">
+Mon: 2pm-8pm <br/>
+Tue: 8am-2pm <br/>
+Wed: 2am-8am <br/>
+Thu: 8pm-2am <br/>
+Fri: 2pm-8pm <br/>
+Sat: 8am-2pm <br/>
+Sun: 2am-8am </i>
+
+  <script>
 // Sample JSON schedule with potential overnight intervals (off < on means overnight)
 // Example: on: "22:00", off: "02:00" means ON from 22:00 today to 02:00 next day
 const schedule = {
