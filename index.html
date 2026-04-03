@@ -19,7 +19,7 @@
 Mon: 2pm-8pm <br/>
 Tue: 8am-2pm <br/>
 Wed: 2am-8am <br/>
-Thu: 8pm-2am <br/>
+Thu: 8pm-2am Fri<br/>
 Fri: 2pm-8pm <br/>
 Sat: 8am-2pm <br/>
 Sun: 2am-8am </i>
@@ -213,7 +213,7 @@ function getCurrentState(schedule) {
   const currentOn = findCurrentOnInterval(schedule, now, nowDayOffset);
   if (currentOn) {
     const dayName = getDayNameByOffset(currentOn.dayOffset);
-    return `The state is ON since ${formatDayTime(currentOn.dayOffset, currentOn.interval.on)} and will go OFF at ${formatDayTime(
+    return `The water is ON since ${formatDayTime(currentOn.dayOffset, currentOn.interval.on)} and will go OFF at ${formatDayTime(
       (currentOn.dayOffset + (timeToMinutes(currentOn.interval.off) <= timeToMinutes(currentOn.interval.on) ? 1 : 0)) % 7,
       currentOn.interval.off
     )}.`;
@@ -232,7 +232,7 @@ function getCurrentState(schedule) {
       ? `will be ON again on ${formatDayTime(nextOn.dayOffset, nextOn.interval.on)}`
       : "will not be ON again soon";
 
-    return `The state is OFF, it ${lastOnStr} and ${nextOnStr}.`;
+    return `The water is OFF. It ${lastOnStr} and ${nextOnStr}.`;
   }
 }
 
