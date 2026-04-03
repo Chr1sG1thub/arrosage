@@ -72,11 +72,11 @@ function getMinutesNow() {
 
 // Get day name by offset relative to today (offset=0 today, 1 tomorrow, -1 yesterday, etc)
 function getDayNameByOffset(offset) {
-//  const todayIndex = daysOfWeek.indexOf(getCurrentDayName());
-//  return daysOfWeek[(todayIndex + offset + 7) % 7];
-  if (offset == 0) return "today";
-  else if (offset == 1) return "tomorrow";
-  else return "yesterday";
+  const todayIndex = daysOfWeek.indexOf(getCurrentDayName());
+  return daysOfWeek[(todayIndex + offset + 7) % 7];
+//  if (offset == 0) return "today";
+//  else if (offset == 1) return "tomorrow";
+//  else return "yesterday";
 }
 
 // Determine if now is within an interval, supports overnight intervals
