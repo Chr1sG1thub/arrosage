@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Schedule State with Overnight Support</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  #output { font-size: 1.2em; }
+</style>
+</head>
+<body>
+<h2>Current State from Daily Schedule (Supports Overnight)</h2>
+<div id="output">Loading...</div>
+
+<script>
+// Sample JSON schedule with potential overnight intervals (off < on means overnight)
+// Example: on: "22:00", off: "02:00" means ON from 22:00 today to 02:00 next day
+const schedule = {
+  "Monday": [
+    { "on": "08:00", "off": "12:00" },
+    { "on": "22:00", "off": "02:00" }  // Overnight example: Mon 22:00 to Tue 02:00
+  ],
+  "Tuesday": [
+    { "on": "09:00", "off": "17:00" }
+  ],
+  "Wednesday": [],
+  "Thursday": [
+    { "on": "08:30", "off": "12:30" },
+    { "on": "13:30", "off": "19:00" }
+  ],
+  "Friday": [
+    { "on": "07:00", "off": "15:00" }
+  ],
+  "Saturday": [],
+  "Sunday": []
+};
+
+const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+// Convert "HH:mm" to total minutes (0-1439)
+function timeToMinutes(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Get current day name (Monday, Tuesday, ...)
+function getCurrentDayName() {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+// Get current minutes from midnight
+function getMinutesNow() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+// Get day name by offset relative to today (offset=0 today, 1 tomorrow, -1 yesterday, etc)
+function getDayNameByOffset(offset) {
+  const todayIndex = daysOfWeek.indexOf(getCurrentDayName());
+  return daysOfWeek[(todayIndex + offset + 7) % 7];
+}
+
+// Determine if now is within an interval, supports overnight intervals
+// Returns true if current time matches the interval on the specified day
+function isNowInInterval(dayOffset, interval, now, nowDayOffset) {
+  let onMin = timeToMinutes(interval.on);
+  let offMin = timeToMinutes(interval.off);
+  const overnight = offMin <= onMin;
+
+  // dayOffset: the day the interval belongs to (relative to today)
+  // nowDayOffset: current day offset (usually 0)
+  // now: current time in minutes
+
+  if (!overnight) {
+    // Normal interval, same day
+    if (dayOffset === nowDayOffset) {
+      return now >= onMin && now < offMin;
+    } else {
+      return false;
+    }
+  } else {
+    // Overnight interval spans two days
+    // Interval starts on dayOffset and ends on dayOffset+1
+    if (dayOffset === nowDayOffset) {
+      // Check from onMin to midnight (1440)
+      return now >= onMin;
+    } else if (dayOffset + 1 === nowDayOffset) {
+      // Check from midnight (0) to offMin
+      return now < offMin;
+    } else {
+      return false;
+    }
+  }
+}
+
+// Find the current ON interval if any, returns interval and day offset or null
+function findCurrentOnInterval(schedule, now, nowDayOffset) {
+  for (let offset = 0; offset < 7; offset++) {
+    const dayName = getDayNameByOffset(offset);
+    const intervals = schedule[dayName] || [];
+    for (const interval of intervals) {
+      if (isNowInInterval(offset, interval, now, nowDayOffset)) {
+        return { interval, dayOffset: offset };
+      }
+    }
+  }
+  return null;
+}
+
+// Helper to compare day offsets in a week cycle (0 to 6)
+function dayOffsetDiff(a, b) {
+  let diff = b - a;
+  if (diff < 0) diff += 7;
+  return diff;
+}
+
+// Find last ON interval before now (returns interval and day offset)
+function findLastOn(schedule, now, nowDayOffset) {
+  let best = null;
+  let bestDist = 8; // max 7 days, start larger
+
+  for (let offset = 0; offset < 7; offset++) {
+    const dayName = getDayNameByOffset(offset);
+    const intervals = schedule[dayName] || [];
+    for (const interval of intervals) {
+      let onMin = timeToMinutes(interval.on);
+      let offMin = timeToMinutes(interval.off);
+      const overnight = offMin <= onMin;
+
+      // Calculate the end time in absolute minutes (minutes + day*1440)
+      let endDay = offset;
+      if (overnight) {
+        endDay = (offset + 1) % 7;
+      }
+
+      // Determine total end time in minutes from start of today (day 0)
+      const endTotal = endDay * 1440 + offMin;
+      const nowTotal = nowDayOffset * 1440 + now;
+
+      if (endTotal <= nowTotal) {
+        let dist = dayOffsetDiff(endDay, nowDayOffset);
+        if (dist < bestDist) {
+          best = { interval, dayOffset: offset };
+          bestDist = dist;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// Find next ON interval after now (returns interval and day offset)
+function findNextOn(schedule, now, nowDayOffset) {
+  let best = null;
+  let bestDist = 8;
+
+  for (let offset = 0; offset < 7; offset++) {
+    const dayName = getDayNameByOffset(offset);
+    const intervals = schedule[dayName] || [];
+    for (const interval of intervals) {
+      let onMin = timeToMinutes(interval.on);
+      let offMin = timeToMinutes(interval.off);
+      const overnight = offMin <= onMin;
+
+      // Start day offset and start total minutes
+      let startDay = offset;
+
+      // Absolute start time in minutes from base day 0
+      const startTotal = startDay * 1440 + onMin;
+      const nowTotal = nowDayOffset * 1440 + now;
+
+      // If interval starts after nowTotal
+      if (startTotal > nowTotal || (overnight && startTotal === nowTotal)) {
+        let dist = dayOffsetDiff(nowDayOffset, startDay);
+        if (dist < bestDist || (dist === bestDist && onMin < timeToMinutes(best.interval.on))) {
+          best = { interval, dayOffset: offset };
+          bestDist = dist;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// Function to format day and time nicely
+function formatDayTime(dayOffset, time) {
+  const dayName = getDayNameByOffset(dayOffset);
+  return `${dayName} at ${time}`;
+}
+
+// Main function to get current state string
+function getCurrentState(schedule) {
+  const nowDayName = getCurrentDayName();
+  const nowDayOffset = 0;
+  const now = getMinutesNow();
+
+  const currentOn = findCurrentOnInterval(schedule, now, nowDayOffset);
+  if (currentOn) {
+    const dayName = getDayNameByOffset(currentOn.dayOffset);
+    return `The state is ON since ${formatDayTime(currentOn.dayOffset, currentOn.interval.on)} and will go OFF at ${formatDayTime(
+      (currentOn.dayOffset + (timeToMinutes(currentOn.interval.off) <= timeToMinutes(currentOn.interval.on) ? 1 : 0)) % 7,
+      currentOn.interval.off
+    )}.`;
+  } else {
+    const lastOn = findLastOn(schedule, now, nowDayOffset);
+    const nextOn = findNextOn(schedule, now, nowDayOffset);
+
+    const lastOnStr = lastOn
+      ? `was last ON until ${formatDayTime(
+          (lastOn.dayOffset + (timeToMinutes(lastOn.interval.off) <= timeToMinutes(lastOn.interval.on) ? 1 : 0)) % 7,
+          lastOn.interval.off
+        )}`
+      : "has not been ON yet";
+
+    const nextOnStr = nextOn
+      ? `will be ON again on ${formatDayTime(nextOn.dayOffset, nextOn.interval.on)}`
+      : "will not be ON again soon";
+
+    return `The state is OFF, it ${lastOnStr} and ${nextOnStr}.`;
+  }
+}
+
+// Display function
+function updateDisplay() {
+  const output = document.getElementById('output');
+  output.textContent = getCurrentState(schedule);
+}
+
+// Initial load and update every minute
+updateDisplay();
+setInterval(updateDisplay, 60000);
+
+</script>
+</body>
+</html>
