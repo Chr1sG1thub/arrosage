@@ -204,7 +204,11 @@ function findNextOn(schedule, now, nowDayOffset) {
 // Function to format day and time nicely
 function formatDayTime(dayOffset, time) {
   const dayName = getDayNameByOffset(dayOffset);
-  return `${dayName} at ${time}`;
+  if (dayName == getCurrentDayName()) {
+    return `TODAY at ${time}`;
+  } else {
+    return `${dayName} at ${time}`;
+  }
 }
 
 // Main function to get current state string
