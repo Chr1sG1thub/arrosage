@@ -220,7 +220,7 @@ function getCurrentState(schedule) {
   const currentOn = findCurrentOnInterval(schedule, now, nowDayOffset);
   if (currentOn) {
     const dayName = getDayNameByOffset(currentOn.dayOffset);
-    return `The water is ON since ${formatDayTime(currentOn.dayOffset, currentOn.interval.on)} and will go OFF ${formatDayTime(
+    return `The water came ON ${formatDayTime(currentOn.dayOffset, currentOn.interval.on)} and will go OFF ${formatDayTime(
       (currentOn.dayOffset + (timeToMinutes(currentOn.interval.off) <= timeToMinutes(currentOn.interval.on) ? 1 : 0)) % 7,
       currentOn.interval.off
     )}.`;
